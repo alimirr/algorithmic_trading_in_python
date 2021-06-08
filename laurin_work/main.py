@@ -9,45 +9,9 @@ import bt
 import talib
 import numpy as np
 import pandas as pd
-
-#import Strategies
+import matplotlib.pyplot as plt
+import seaborn as sns
 import Strategies
-""" 
-
-Test Several Strategies
-
-
-
-# Specify which data to import
-
-assets = ['BTC-USD', 'MIOTA-USD', 'ADA-USD', 'ETH-USD']
-beginning = '01-01-2020'
-ending = '06-01-2021'
-
-# Import Data
-data = bt.get(assets,start=beginning,end=ending)
-
-# Define Weights
-#weights = {'BTC-USD':0.5, 'MIOTA-USD':0.2,'ADA-USD':0.1,'ETH-USD':0.2}
-
-benchmark = Strategies.hodl(assets)
-sma_10 = Strategies.above_sma(assets, sma_per=10, name='sma10')
-sma_25 = Strategies.above_sma(assets, sma_per=25, name='sma25')
-sma_50 = Strategies.above_sma(assets, sma_per=50, name='sma50')
-
-run_bt = bt.run(benchmark,sma_10,sma_25,sma_50)
-
-# Display results
-run_bt.plot()
-run_bt.display()
-run_bt.plot_security_weights()
-"""
-
-"""
-
-Strategy based on own Signals
-
-"""
 
 from methods import get_indicator_signal, plot_bband_dema
 
@@ -55,23 +19,16 @@ from methods import get_indicator_signal, plot_bband_dema
 asset = 'BTC-USD'
 
 # Specify
-start = '01-01-2019'
-end = '31-12-2021'
+training_start = '01-01-2014'
+training_end = '31-12-2018'
+test_start = '01-01-2019'
+test_end = '06-01-2021'
 
 # BBands
 t_bbands = 80
 nbdevup = 1
 nbdevdn = 1
 
-# DEMA
-t_fast = 20
-t_slow = 100
-
-# Get Indicators and Signals 
-indicators,signals = get_indicator_signal(asset=asset,start=start,end=end,t_fast=t_fast,t_slow=t_slow,t_bbands=t_bbands, nbdevup=nbdevup, nbdevdn=nbdevdn)
-
-# Plot the data
-bband_dema_fig = plot_bband_dema(asset=asset,indicators=indicators,signals=signals)
 
 """ 
 
@@ -90,25 +47,10 @@ DEMA-Strategy
 
 """
 
-# Get the target weights of the DEMA Strategy
-
-target_weight = pd.DataFrame(signals['DEMA'])
-target_weight.columns = [asset]
-
-# Create DEMA Strategy
-
-dema_crossover = bt.Strategy('DEMA_Crossover', 
-                           [bt.algos.WeighTarget(target_weight),
-                            bt.algos.Rebalance()],
-                           )
-
-#Create and run Backtest
-
-backtest_dema = bt.Backtest(dema_crossover, pd.DataFrame(indicators[asset]))
 
 """
 
-Optimization of the DEMA Strategy
+Optimization of the DEMA Strategy based on Training Data
 
 """
 
@@ -117,11 +59,11 @@ results_df = pd.DataFrame(columns = ['t_fast', 't_slow',
                                      'CAGR', 'Daily_Sharpe','Max_Drawdown'])
 
 # Loop over t_fast and t_slow
-for t_fast in np.arange(20,24,2):
-    for t_slow in np.arange(100,120,5):
+for t_fast in np.arange(20,28,1):
+    for t_slow in np.arange(80,100,2):
         
         # Get Indicators and Signals 
-        indicators,signals = get_indicator_signal(asset=asset,start=start,end=end,t_fast=t_fast,t_slow=t_slow,t_bbands=t_bbands, nbdevup=nbdevup, nbdevdn=nbdevdn)
+        indicators,signals = get_indicator_signal(asset=asset,start=training_start,end=training_end,t_fast=t_fast,t_slow=t_slow,t_bbands=t_bbands, nbdevup=nbdevup, nbdevdn=nbdevdn)
         
         # Set Target Weights
         target_weight = pd.DataFrame(signals['DEMA'])
@@ -156,17 +98,90 @@ for t_fast in np.arange(20,24,2):
                                       ignore_index=True)
 
 
+# Prepare data for CAGR Heatmap
+CAGR = results_df.pivot(index='t_fast', columns='t_slow', values = 'CAGR')
+
+# Plot heatmap of CAGR
+
+
+# Set figure size
+fig, ax = plt.subplots(figsize=(15, 8))
+
+# Plot the heatmap
+ax = sns.heatmap(data       = CAGR,            # Data for plot (3 dimensional)
+                 annot      = True,            # Annotate with values
+                 annot_kws  = {"fontsize":15}, # Size of annotation
+                 linewidths = 0.5,             # Size of gridlines
+                 cmap       = "inferno")       # Style (viridis, plasma, inferno, magma, cividis)
+
+
+# Change size of x-axis & y-axis tickmarks
+ax.set_xticklabels(ax.get_xmajorticklabels(), fontsize = 16)
+ax.set_yticklabels(ax.get_ymajorticklabels(), fontsize = 15)
+
+
+# Customize labels
+ax.set_xlabel("t_slow", fontsize = 20)
+ax.set_ylabel("t_fast", fontsize = 20)
+ax.set_title("CAGR per DEMA Combination",fontsize = 23)
+
+
+# Show plot
+plt.show()
+
+
+""" 
+
+Test the optimal parameters with Test Data
+
+"""
+
+
 # Best strategy in terms of CAGR
 index_highest_cagr = results_df['CAGR'].idxmax(5)
-results_df.loc[[index_highest_cagr]]
+print(results_df.loc[[index_highest_cagr]])
 
 # Best strategy in terms of Daily Sharpe
 index_highest_sharpe = results_df['Daily_Sharpe'].idxmax(5)
-results_df.loc[[index_highest_sharpe]]
+print(results_df.loc[[index_highest_sharpe]])
 
 # Best strategy in terms of Daily Sharpe
 index_highest_drawdown = results_df['Max_Drawdown'].idxmax(5)
-results_df.loc[[index_highest_drawdown]]
+print(results_df.loc[[index_highest_drawdown]])
+
+
+
+# Optimal Parameters
+t_fast = int(results_df.loc[[index_highest_cagr],'t_fast'])
+t_slow = int(results_df.loc[[index_highest_cagr],'t_slow'])
+
+# Get Indicators and Signals 
+indicators,signals = get_indicator_signal(asset=asset,start=test_start,end=test_end,t_fast=t_fast,t_slow=t_slow,t_bbands=t_bbands, nbdevup=nbdevup, nbdevdn=nbdevdn)
+
+# Plot the data
+bband_dema_fig = plot_bband_dema(asset=asset,indicators=indicators,signals=signals)
+
+# Get the target weights of the DEMA Strategy
+
+target_weight = pd.DataFrame(signals['DEMA'])
+target_weight.columns = [asset]
+
+# Create DEMA Strategy
+
+dema_crossover = bt.Strategy('Optimized_DEMA_Crossover', 
+                           [bt.algos.WeighTarget(target_weight),
+                            bt.algos.Rebalance()],
+                           )
+
+#Create and run Backtest
+
+backtest_dema = bt.Backtest(dema_crossover, pd.DataFrame(indicators[asset]))
+
+run = bt.run(backtest_dema)
+run.plot()
+run.display()
+run.plot_security_weights()
+
 
 
 """
