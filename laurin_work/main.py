@@ -10,14 +10,46 @@ import talib
 import numpy as np
 import pandas as pd
 
+#import Strategies
 import Strategies
-from Methods import get_indicator_signal, plot_bband_dema
+""" 
+
+Test Several Strategies
+
+
+
+# Specify which data to import
+
+assets = ['BTC-USD', 'MIOTA-USD', 'ADA-USD', 'ETH-USD']
+beginning = '01-01-2020'
+ending = '06-01-2021'
+
+# Import Data
+data = bt.get(assets,start=beginning,end=ending)
+
+# Define Weights
+#weights = {'BTC-USD':0.5, 'MIOTA-USD':0.2,'ADA-USD':0.1,'ETH-USD':0.2}
+
+benchmark = Strategies.hodl(assets)
+sma_10 = Strategies.above_sma(assets, sma_per=10, name='sma10')
+sma_25 = Strategies.above_sma(assets, sma_per=25, name='sma25')
+sma_50 = Strategies.above_sma(assets, sma_per=50, name='sma50')
+
+run_bt = bt.run(benchmark,sma_10,sma_25,sma_50)
+
+# Display results
+run_bt.plot()
+run_bt.display()
+run_bt.plot_security_weights()
+"""
 
 """
 
 Strategy based on own Signals
 
 """
+
+from methods import get_indicator_signal, plot_bband_dema
 
 #Methods work currently only for one asset at a time
 asset = 'BTC-USD'
@@ -40,6 +72,14 @@ indicators,signals = get_indicator_signal(asset=asset,start=start,end=end,t_fast
 
 # Plot the data
 bband_dema_fig = plot_bband_dema(asset=asset,indicators=indicators,signals=signals)
+
+""" 
+
+Buy and Hold
+
+"""
+
+hodl = Strategies.hodl(asset)
 
 
 """ 
@@ -64,13 +104,8 @@ dema_crossover = bt.Strategy('DEMA_Crossover',
 
 #Create and run Backtest
 
-backtest = bt.Backtest(dema_crossover, pd.DataFrame(indicators[asset]))
-run = bt.run(backtest)
+backtest_dema = bt.Backtest(dema_crossover, pd.DataFrame(indicators[asset]))
 
-# Display results
-run.plot()
-run.display()
-run.plot_security_weights()
 
 """
 
@@ -91,18 +126,13 @@ bbands = bt.Strategy('BDands_Crossover_Up',
                             bt.algos.Rebalance()],
                            )
 
-backtest = bt.Backtest(bbands, pd.DataFrame(indicators[asset]))
+backtest_bbands = bt.Backtest(bbands, pd.DataFrame(indicators[asset]))
 
-run = bt.run(backtest)
 
-# Display results
+
+run = bt.run(hodl, backtest_dema,backtest_bbands)
 run.plot()
 run.display()
 run.plot_security_weights()
-
-
-
-
-
 
 
