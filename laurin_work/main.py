@@ -106,6 +106,68 @@ dema_crossover = bt.Strategy('DEMA_Crossover',
 
 backtest_dema = bt.Backtest(dema_crossover, pd.DataFrame(indicators[asset]))
 
+"""
+
+Optimization of the DEMA Strategy
+
+"""
+
+# Create placeholder for SMAs, CAGR, & Daily Sharpe
+results_df = pd.DataFrame(columns = ['t_fast', 't_slow', 
+                                     'CAGR', 'Daily_Sharpe','Max_Drawdown'])
+
+# Loop over t_fast and t_slow
+for t_fast in np.arange(20,24,2):
+    for t_slow in np.arange(100,120,5):
+        
+        # Get Indicators and Signals 
+        indicators,signals = get_indicator_signal(asset=asset,start=start,end=end,t_fast=t_fast,t_slow=t_slow,t_bbands=t_bbands, nbdevup=nbdevup, nbdevdn=nbdevdn)
+        
+        # Set Target Weights
+        target_weight = pd.DataFrame(signals['DEMA'])
+        target_weight.columns = [asset]
+        
+        # Name Strategy      
+        strategy = f'Long_DEMA:{t_fast}_Slow_DEMA:{t_slow}'
+        
+        # Define Strategy
+        dema_crossover = bt.Strategy(strategy, 
+                               [bt.algos.WeighTarget(target_weight),
+                                bt.algos.Rebalance()],
+                               )
+        
+        
+        # Create and run Backtest
+        backtest_dema = bt.Backtest(dema_crossover, pd.DataFrame(indicators[asset]))
+        result = bt.run(backtest_dema)
+        
+
+        # Save some figures into variable for easy access
+        CAGR = result.stats.at['cagr', strategy]
+        Daily_Sharpe = result.stats.at['daily_sharpe', strategy]
+        Max_Drawdown = result.stats.at['max_drawdown', strategy]
+        
+        # Append the figures we're interested in to our result dataframe
+        results_df = results_df.append({'t_fast'    : t_fast.astype(int),
+                                       't_slow'     : t_slow.astype(int),
+                                       'CAGR'         : CAGR,
+                                       'Daily_Sharpe' : Daily_Sharpe,
+                                       'Max_Drawdown':Max_Drawdown}, 
+                                      ignore_index=True)
+
+
+# Best strategy in terms of CAGR
+index_highest_cagr = results_df['CAGR'].idxmax(5)
+results_df.loc[[index_highest_cagr]]
+
+# Best strategy in terms of Daily Sharpe
+index_highest_sharpe = results_df['Daily_Sharpe'].idxmax(5)
+results_df.loc[[index_highest_sharpe]]
+
+# Best strategy in terms of Daily Sharpe
+index_highest_drawdown = results_df['Max_Drawdown'].idxmax(5)
+results_df.loc[[index_highest_drawdown]]
+
 
 """
 
@@ -134,5 +196,15 @@ run = bt.run(hodl, backtest_dema,backtest_bbands)
 run.plot()
 run.display()
 run.plot_security_weights()
+
+run.stats.loc['total_return']
+
+
+
+
+
+
+
+
 
 
