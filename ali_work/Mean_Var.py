@@ -9,8 +9,8 @@ Created on Fri Jun 14 01:49:17 2019
 
 # Import the bt package so we can use the backtesting functions
 import bt
-# import matplotlib.pyplot as plt
-# %matplotlib inline
+import matplotlib.pyplot as plt
+%matplotlib inline
 import pandas as pd
 
 # Intead of using a date to get the data in every call, I set up a variable here
