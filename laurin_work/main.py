@@ -59,8 +59,8 @@ results_df = pd.DataFrame(columns = ['t_fast', 't_slow',
                                      'CAGR', 'Daily_Sharpe','Max_Drawdown'])
 
 # Loop over t_fast and t_slow
-for t_fast in np.arange(20,28,1):
-    for t_slow in np.arange(80,100,2):
+for t_fast in np.arange(20,30,5):
+    for t_slow in np.arange(110,130,10):
         
         # Get Indicators and Signals 
         indicators,signals = get_indicator_signal(asset=asset,start=training_start,end=training_end,t_fast=t_fast,t_slow=t_slow,t_bbands=t_bbands, nbdevup=nbdevup, nbdevdn=nbdevdn)
@@ -155,8 +155,21 @@ print(results_df.loc[[index_highest_drawdown]])
 t_fast = int(results_df.loc[[index_highest_cagr],'t_fast'])
 t_slow = int(results_df.loc[[index_highest_cagr],'t_slow'])
 
+t_fast = 28
+t_slow = 126
+t_bbands = 80
+nbdevup = 0.8
+nbdevdn = 1
+
+
+training_start = '01-01-2014'
+training_end = '31-12-2018'
+
+test_start = '01-01-2018'
+test_end = '06-01-2021'
+
 # Get Indicators and Signals 
-indicators,signals = get_indicator_signal(asset=asset,start=test_start,end=test_end,t_fast=t_fast,t_slow=t_slow,t_bbands=t_bbands, nbdevup=nbdevup, nbdevdn=nbdevdn)
+indicators,signals = get_indicator_signal(asset=asset,start=training_start,end=training_end,t_fast=t_fast,t_slow=t_slow,t_bbands=t_bbands, nbdevup=nbdevup, nbdevdn=nbdevdn)
 
 # Plot the data
 bband_dema_fig = plot_bband_dema(asset=asset,indicators=indicators,signals=signals)
@@ -207,7 +220,7 @@ backtest_bbands = bt.Backtest(bbands, pd.DataFrame(indicators[asset]))
 
 
 
-run = bt.run(hodl, backtest_dema,backtest_bbands)
+run = bt.run(hodl,backtest_dema,backtest_bbands)
 run.plot()
 run.display()
 run.plot_security_weights()

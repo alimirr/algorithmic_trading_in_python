@@ -58,7 +58,7 @@ def plot_bband_dema(asset,indicators,signals):
     fig.subplots_adjust(hspace=0.8)
 
     ax1.plot(indicators[asset], linewidth=3, label='Price',color='black')
-    ax1.set_yscale('log')
+    #ax1.set_yscale('log')
     ax1.title.set_text('Price with Bollinger Bands')
     # Add BBANDS to subplot
     ax1.plot(indicators['Lowerband'],label='Lowerband',color='green')
@@ -71,7 +71,7 @@ def plot_bband_dema(asset,indicators,signals):
 
     ax3.plot(indicators['Fast_DEMA'],label='Fast DEMA')
     ax3.plot(indicators['Slow_DEMA'],label='Slow DEMA')
-    ax3.set_yscale('log')
+    #ax3.set_yscale('log')
     ax3.title.set_text('Double Exponential Moving Average - DEMA')
     ax3.legend()
 
